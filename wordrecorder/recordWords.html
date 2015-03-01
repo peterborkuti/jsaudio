@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Words</title>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.min.css" rel="stylesheet">
+  </head>
+
+  <body>
+    <div class="navbar navbar-static-top">
+      <div class="container">
+        <a class="navbar-brand" href="/">Record Words</a>
+      </div>
+    </div>
+
+    <div class="container">
+      <audio id="recorder" src=""></audio>
+      <audio id="echoplayer" src=""></audio>
+      <div class="hideWhenGotUserMediaStream">
+        <p>Kérlek engedélyezd hogy ez a weblap használja a mikrofonodat.</p>
+        <p>Ezzel a weboldallal egy játékhoz gyűjtök hangmintákat. A hangminták
+        nem fognak hallatszani soha, névtelenül tárolom, a program a hangminták
+        segítségével fogja megtanulni, hogy ismerje fel a felhasználó válaszait.</p>
+      </div>
+
+     <div id="app" style="display: none;">
+      <p>Felvétel gomb: elindítja a hangfelvételt.</p>
+      <p>Mozgó sáv: jelszintmérő, a hangerő ellenőrzésére szolgál. Kérlek 
+         beszélj olyan hangerővel, hogy a jelszintmérő zöld legyen.</p>
+      <p>A Felvétel gomb megnyomása után a jelszint mérő jobb oldalán a 
+        következő szavak
+        fognak feltűnni: <mark id="words"></mark>.
+        Kérlek mondd ki a szavakat egyszer a megjelenésükkor.
+        Minden szó közel 2 másodpercig látható.</p>
+      <hr>
+      <p>Ha készen állsz, nyomd meg a Felvétel gombot.
+         Az egész kb. 12 másodpercet vesz igénybe</p>
+
+      <button id="start" 
+        class="btn btn-default btn-lg pull-left"
+        onclick="wordRecorder.record();">
+        <span id="spanRecord" class="glyphicon glyphicon-record"></span>Felvétel
+        </button>
+      <div class="progress pull-left" style="height: 38px; width: 200px">
+        <div class="progress-bar" id="recordVolume" style="width: 0%; transition:none"></div>
+      </div>
+
+      <h3 id='showWord' >&nbsp;</h3>
+
+      <p id="thanks" class="pull-left" style="display: none;">Köszönöm, ennyi volt. Ha van még időd, megcsinálhatod újra,
+      kicsit másmilyen hangon, például gyorsabban/lassabban beszélve, mérgesen, ilyedten vagy
+      ideges hangon.</p>
+
+     </div>
+    </div><!--/.fluid-container-->
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc2/js/bootstrap.min.js"></script>
+    <script src="echoAudio.js"></script>
+    <script>
+        function WordRecorder() {
+            var domShowWord = $('#showWord');
+            var progressBarId = '#recordVolume';
+            var recording = false;
+
+            var words = [ "rajta", "nem", "igen", "lehet", "szünet", "vége" ];
+
+            var wordIndex = -1;
+
+            function ajaxErrorHandler(xhr, ajaxOptions, thrownError) {
+                alert("Hiba történt mentéskor.");
+                wordIndex = 100;
+            }
+
+            this.init = function() {
+                initAudioBackend(progressBarId, ajaxErrorHandler);
+                getUserMedia({audio:true},
+                    function(){
+                        $('.enableWhenGotUserMediaStream').removeClass('disabled');
+                        $('.hideWhenGotUserMediaStream').fadeOut();
+                        $('#app').fadeIn();
+                    });
+                $('#words').html(words.join(','));
+            };
+
+
+            function showWord() {
+                if ((wordIndex > -1) && (wordIndex < words.length)) {
+                    domShowWord.html(words[wordIndex]);
+                }
+                else {
+                    domShowWord.html('');
+                }
+            }
+
+            function hideWord() {
+                domShowWord.html('');
+            }
+
+            function endOfSession() {
+                $('#start').removeClass('btn-disabled');
+                $('#start').removeClass('disabled');
+                $('#start').addClass('btn-default');
+                recording = false;
+                $('#thanks').fadeIn();
+            }
+
+            function recordWord() {
+                if (wordIndex >= words.length) {
+                    endOfSession();
+                    return;
+                };
+
+                if (wordIndex > -1) {
+                    stopRecording($('#echoplayer'));
+                    sendBlob(wordIndex);
+                };
+
+                wordIndex++;
+
+                startRecording();
+
+                setTimeout(showWord, 700);
+                setTimeout(hideWord,2300);
+
+                setTimeout(recordWord, 3000);
+            }
+
+            this.record = function() {
+                wordIndex = -1;
+                recording = true;
+                $('#start').removeClass('btn-default');
+                $('#start').addClass('btn-disabled');
+                $('#start').addClass('disabled');
+                $('#thanks').fadeOut();
+                recordWord();
+            }
+
+            this.init();
+
+        };
+
+        $(function() {
+            wordRecorder = new WordRecorder();
+        })
+
+    </script>
+
+  </body>
+</html>
